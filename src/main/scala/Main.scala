@@ -10,24 +10,25 @@ import akka.stream.scaladsl.Source
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.server.Directives
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 import scala.concurrent.duration._
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
-import graph.{Graph, OsHelper}
+import graph.OsHelper
+import jsonFormat.JsonSupport
 
 
 
-object HttpServerRoutingMinimal {
+object HttpServerRoutingMinimal extends Directives with JsonSupport{
 
   def main(args: Array[String]): Unit = {
 
     implicit val system = ActorSystem(Behaviors.empty, "my-system")
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.executionContext
-
 
     val c = CorsSettings.defaultSettings.withAllowGenericHttpRequests(true)
 
@@ -37,9 +38,9 @@ object HttpServerRoutingMinimal {
         get {
           complete {
             Source
-              .tick(2.seconds, 2.seconds, NotUsed)
+              .tick(1.seconds, 1.seconds, NotUsed)
               .map(_ => OsHelper.cpuLoad)
-              .map(cpuLoad => ServerSentEvent(cpuLoad.toString))
+              .map(cpuLoad => ServerSentEvent(cpuLoad))
               .keepAlive(1.second, () => ServerSentEvent.heartbeat)
           }
         }
