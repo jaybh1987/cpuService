@@ -3,17 +3,22 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+
 import scala.io.StdIn
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import scala.concurrent.duration._
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
+import scala.concurrent.duration._
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
+import graph.{Graph, OsHelper}
+
+
 
 object HttpServerRoutingMinimal {
 
@@ -23,15 +28,20 @@ object HttpServerRoutingMinimal {
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.executionContext
 
-    val route = path("events") {
-      import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
-      get {
-        complete {
+
+    val c = CorsSettings.defaultSettings.withAllowGenericHttpRequests(true)
+
+    val route = cors() {
+      path("events") {
+        import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+        get {
+          complete {
             Source
               .tick(2.seconds, 2.seconds, NotUsed)
-              .map( _ => LocalTime.now())
-              .map(time => ServerSentEvent(ISO_LOCAL_TIME.format(time)))
+              .map(_ => OsHelper.cpuLoad)
+              .map(cpuLoad => ServerSentEvent(cpuLoad.toString))
               .keepAlive(1.second, () => ServerSentEvent.heartbeat)
+          }
         }
       }
     }
