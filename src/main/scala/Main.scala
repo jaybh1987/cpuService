@@ -48,7 +48,7 @@ object HttpServerRoutingMinimal extends Directives {
             Source
               .tick(1.seconds, 1.seconds, NotUsed)
               .map{ _ =>
-                Graph.toJson(Graph(OsHelper.cpuLoad, "0", "0"))
+                Graph.toJson(Graph(OsHelper.cpuLoad, OsHelper.processCpuLoad, "0"))
               }
               .map(cpuLoad => ServerSentEvent(cpuLoad))
               .keepAlive(1.second, () => ServerSentEvent.heartbeat)
