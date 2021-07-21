@@ -18,11 +18,19 @@ import scala.concurrent.duration._
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter.ISO_LOCAL_TIME
 import graph.OsHelper
-import jsonFormat.JsonSupport
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import spray.json._
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.model._
+import  jsonFormat._
 
 
 
-object HttpServerRoutingMinimal extends Directives with JsonSupport{
+
+object HttpServerRoutingMinimal extends Directives {
 
   def main(args: Array[String]): Unit = {
 
@@ -39,7 +47,9 @@ object HttpServerRoutingMinimal extends Directives with JsonSupport{
           complete {
             Source
               .tick(1.seconds, 1.seconds, NotUsed)
-              .map(_ => OsHelper.cpuLoad)
+              .map{ _ =>
+                Graph.toJson(Graph(OsHelper.cpuLoad, "0", "0"))
+              }
               .map(cpuLoad => ServerSentEvent(cpuLoad))
               .keepAlive(1.second, () => ServerSentEvent.heartbeat)
           }
